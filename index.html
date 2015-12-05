@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Scallywag!</title>
+</head>
+<script type="text/javascript" src="perlin.js"></script>
+<script type="text/javascript" src="scallywag.js"></script>
+<body>
+<h1>Scallywag!</h1>
+<input type="number" id="seed" value="666">
+<button id="generate" onclick="generatePirateMap(document.getElementById('canvas'), document.getElementById('seed').value)">Generate!</button>
+<br>
+<br>
+<canvas width="600" height="400" id="canvas" style="background-color: lightgray;">
+</body>
+</html>

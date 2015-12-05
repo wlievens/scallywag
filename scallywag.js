@@ -144,7 +144,18 @@ function generatePirateMap(canvas, seed)
 				}
 				else
 				{
-					factor = 1.00 + (coastRatio > 0.5 ? (coastRatio - 1) * 0.3 : 0) - (coastRatio <= 0.5 ? (0.5 - coastRatio) : 0);
+					if (coastRatio == 1)
+					{
+						factor = 1;
+					}
+					else if (coastRatio >= 0.5)
+					{
+						factor = 0.5 + 0.5 * coastRatio;
+					}
+					else
+					{
+						factor = 1 - coastRatio * 0.5;
+					}
 				}
 			}
 			else

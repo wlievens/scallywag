@@ -73,7 +73,7 @@ function generatePirateMap(canvas, seed)
 			scale = 6.0;
 			sx = scale * x / size;
 			sy = scale * y / size;
-			var octaves = 4;
+			var octaves = 1;
 			var value = 0;
 			persistence = 0.5;
 			for (var n = 0; n < octaves; ++n)
@@ -88,7 +88,7 @@ function generatePirateMap(canvas, seed)
         }
     }
     var coastMap = [];
-    var coastRange = 10;
+    var coastRange = 3;
     for (var y = 0; y < height; ++y)
     {
         for (var x = 0; x < width; ++x)
@@ -192,5 +192,112 @@ function generatePirateMap(canvas, seed)
             data[index * 4 + 3] = 0xFF;
         }
     }
+	
     gfx.putImageData(image, 0, 0);
+	
+	function drawCompassRose(gfx, radius)
+	{
+		var sqrt2 = Math.sqrt(2);
+		
+		var r1 = radius * 1.00;
+		var r2 = radius * 0.24;
+		var r4 = radius * 1.10;
+		var r5 = radius * 1.00;
+		
+		var r3 = (-r1 * r2) / (2 * r2 - r1);
+		var p4 = (r2*(r1*r2-r1*r1-r2*r1))/(r1*r2-r1*r1-2*r2*r2+r2*r1);
+		var q4 = -(r2*r1*(2*r2-r1))/(2*r2*r2-2*r2*r1+r1*r1);
+		var p5 = q4;
+		var q5 = p4;
+
+		gfx.lineWidth = 1.0;
+		gfx.strokeStyle = 'black';
+		gfx.fillStyle = 'black';
+
+		steps = 16;
+		step = 2 * Math.PI / steps;
+		for (var n = 0; n < steps; n += 2)
+		{
+			var a1 = (n + 0.5) * step;
+			var a2 = (n + 1.5) * step;
+			gfx.beginPath();
+			gfx.moveTo(Math.cos(a1) * r4, Math.sin(a1) * r4);
+			gfx.arc(0, 0, r4, a1, a2, false);
+			gfx.lineTo(Math.cos(a2) * r5, Math.sin(a2) * r5);
+			gfx.arc(0, 0, r5, a2, a1, true);
+			gfx.lineTo(Math.cos(a1) * r5, Math.sin(a1) * r5);
+			gfx.closePath();
+			gfx.fill();
+		}
+		
+		gfx.beginPath();
+		gfx.arc(0, 0, r4, 0, Math.PI * 2);
+		gfx.stroke();
+		
+		gfx.beginPath();
+		gfx.arc(0, 0, r5, 0, Math.PI * 2);
+		gfx.stroke();
+
+		gfx.beginPath();
+		gfx.moveTo(  0,   0);
+		gfx.lineTo(  0, -r1);
+		gfx.lineTo(+r2, -r2);
+		gfx.lineTo(+r3, -r3);
+		gfx.lineTo(+p4, -q4);
+		gfx.lineTo(+r2, -r2);
+		gfx.lineTo(  0,   0);
+		gfx.lineTo(+r1,   0);
+		gfx.lineTo(+r2, +r2);
+		gfx.lineTo(+r3, +r3);
+		gfx.lineTo(+p5, +q5);
+		gfx.lineTo(+r2, +r2);
+		gfx.lineTo(  0,   0);
+		gfx.lineTo(  0, +r1);
+		gfx.lineTo(-r2, +r2);
+		gfx.lineTo(-r3, +r3);
+		gfx.lineTo(-p4, +q4);
+		gfx.lineTo(-r2, +r2);
+		gfx.lineTo(  0,   0);
+		gfx.lineTo(-r1,   0);
+		gfx.lineTo(-r2, -r2);
+		gfx.lineTo(-r3, -r3);
+		gfx.lineTo(-p5, -q5);
+		gfx.lineTo(-r2, -r2);
+		gfx.lineTo(  0,   0);
+		gfx.stroke();
+
+		gfx.beginPath();
+		gfx.moveTo(  0,   0);
+		gfx.lineTo(  0, -r1);
+		gfx.lineTo(-r2, -r2);
+		gfx.lineTo(-r3, -r3);
+		gfx.lineTo(-p4, -q4);
+		gfx.lineTo(-r2, -r2);
+		gfx.lineTo(  0,   0);
+		gfx.lineTo(+r1,   0);
+		gfx.lineTo(+r2, -r2);
+		gfx.lineTo(+r3, -r3);
+		gfx.lineTo(+p5, -q5);
+		gfx.lineTo(+r2, -r2);
+		gfx.lineTo(  0,   0);
+		gfx.lineTo(  0, +r1);
+		gfx.lineTo(+r2, +r2);
+		gfx.lineTo(+r3, +r3);
+		gfx.lineTo(+p4, +q4);
+		gfx.lineTo(+r2, +r2);
+		gfx.lineTo(  0,   0);
+		gfx.lineTo(-r1,   0);
+		gfx.lineTo(-r2, +r2);
+		gfx.lineTo(-r3, +r3);
+		gfx.lineTo(-p5, +q5);
+		gfx.lineTo(-r2, +r2);
+		gfx.lineTo(  0,   0);
+		gfx.fill();
+		gfx.stroke();
+	}
+	
+	gfx.translate(100, height - 100);
+	gfx.rotate(0.0);
+	drawCompassRose(gfx, 70);
+	gfx.translate(-100, 100 - height);
 }

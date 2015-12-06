@@ -73,9 +73,9 @@ function generatePirateMap(canvas, seed)
 			scale = 6.0;
 			sx = scale * x / size;
 			sy = scale * y / size;
-			var octaves = 1;
+			var octaves = 4;
 			var value = 0;
-			persistence = 0.5;
+			persistence = 0.60;
 			for (var n = 0; n < octaves; ++n)
 			{
 				var frequency = Math.pow(2, n);
@@ -88,7 +88,7 @@ function generatePirateMap(canvas, seed)
         }
     }
     var coastMap = [];
-    var coastRange = 3;
+    var coastRange = 10;
     for (var y = 0; y < height; ++y)
     {
         for (var x = 0; x < width; ++x)
@@ -201,25 +201,28 @@ function generatePirateMap(canvas, seed)
 		
 		var r1 = radius * 1.00;
 		var r2 = radius * 0.24;
-		var r4 = radius * 1.10;
-		var r5 = radius * 1.00;
+		var r4 = radius * 0.90;
+		var r5 = radius * 0.80;
 		
 		var r3 = (-r1 * r2) / (2 * r2 - r1);
 		var p4 = (r2*(r1*r2-r1*r1-r2*r1))/(r1*r2-r1*r1-2*r2*r2+r2*r1);
 		var q4 = -(r2*r1*(2*r2-r1))/(2*r2*r2-2*r2*r1+r1*r1);
 		var p5 = q4;
 		var q5 = p4;
+		
+		color1 = 'rgb(77,62,48)';
+		color2 = 'rgb(' + rgbSea[0] + ',' + rgbSea[1] + ',' + rgbSea[2] + ')';
 
 		gfx.lineWidth = 1.0;
-		gfx.strokeStyle = 'black';
-		gfx.fillStyle = 'black';
+		gfx.strokeStyle = color1;
 
 		steps = 16;
 		step = 2 * Math.PI / steps;
-		for (var n = 0; n < steps; n += 2)
+		for (var n = 0; n < steps; ++n)
 		{
 			var a1 = (n + 0.5) * step;
 			var a2 = (n + 1.5) * step;
+			gfx.fillStyle = (n % 2 == 0) ? color1 : color2;
 			gfx.beginPath();
 			gfx.moveTo(Math.cos(a1) * r4, Math.sin(a1) * r4);
 			gfx.arc(0, 0, r4, a1, a2, false);
@@ -238,6 +241,7 @@ function generatePirateMap(canvas, seed)
 		gfx.arc(0, 0, r5, 0, Math.PI * 2);
 		gfx.stroke();
 
+		gfx.fillStyle = color2;
 		gfx.beginPath();
 		gfx.moveTo(  0,   0);
 		gfx.lineTo(  0, -r1);
@@ -264,8 +268,10 @@ function generatePirateMap(canvas, seed)
 		gfx.lineTo(-p5, -q5);
 		gfx.lineTo(-r2, -r2);
 		gfx.lineTo(  0,   0);
+		gfx.fill();
 		gfx.stroke();
 
+		gfx.fillStyle = color1;
 		gfx.beginPath();
 		gfx.moveTo(  0,   0);
 		gfx.lineTo(  0, -r1);
@@ -296,8 +302,9 @@ function generatePirateMap(canvas, seed)
 		gfx.stroke();
 	}
 	
-	gfx.translate(100, height - 100);
-	gfx.rotate(0.0);
-	drawCompassRose(gfx, 70);
-	gfx.translate(-100, 100 - height);
+	var compassPosition = 70;
+	gfx.translate(compassPosition, height - compassPosition);
+	gfx.rotate(Math.PI * 0.04);
+	drawCompassRose(gfx, 50);
+	gfx.translate(-compassPosition, compassPosition - height);
 }

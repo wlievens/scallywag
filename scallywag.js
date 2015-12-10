@@ -239,9 +239,9 @@ function generatePirateMap(canvas, seed)
             scale = 4.0;
             sx = scale * x / maxSize;
             sy = scale * y / maxSize;
-            var octaves = 5;
+            var octaves = 4;
             var value = 0;
-            persistence = 0.6;
+            persistence = 0.68;
             for (var n = 0; n < octaves; ++n)
             {
                 var frequency = Math.pow(2, n);
@@ -319,7 +319,7 @@ function generatePirateMap(canvas, seed)
     
 	// Determine coast range distances
     var coastMap = [];
-    var coastRange = 10;
+    var coastRange = 9;
     for (var y = 0; y < height; ++y)
     {
         for (var x = 0; x < width; ++x)
@@ -396,9 +396,10 @@ function generatePirateMap(canvas, seed)
 	if (goal)
 	{
 		// Pick the points that will make up the path
-		for (var n = 0; n < 60; ++n)
+		points.push(goal);
+		for (var n = 0; n < 40; ++n)
 		{
-			var point = pickIslandPoint(largestIsland, points, 25.0);
+			var point = pickIslandPoint(largestIsland, points, 30.0);
 			if (point)
 			{
 				points.push(point);
@@ -406,7 +407,6 @@ function generatePirateMap(canvas, seed)
 		}
 		
 		// Sort them sensibly
-		path.push(goal);
 		var current = goal;
 		while (points.length)
 		{
@@ -427,27 +427,32 @@ function generatePirateMap(canvas, seed)
 			}
 			if (nearest)
 			{
-				if (nearestDist < 70)
+				if (nearestDist < 80)
 				{
 					// Test if the path is mostly land of the same island
-					var steps = Math.ceil(nearestDist);
-					var good = 0;
-					var bad = 0;
-					for (var n = 0; n <= steps; ++n)
+					var valid = true;
+					if (nearest != goal)
 					{
-						var r = n / steps;
-						var x = Math.round(current.x + (nearest.x - current.x) * r);
-						var y = Math.round(current.y + (nearest.y - current.y) * r);
-						if (islandMap[x + y * width] == largestIsland)
+						var steps = Math.ceil(nearestDist);
+						var good = 0;
+						var bad = 0;
+						for (var n = 0; n <= steps; ++n)
 						{
-							++good;
+							var r = n / steps;
+							var x = Math.round(current.x + (nearest.x - current.x) * r);
+							var y = Math.round(current.y + (nearest.y - current.y) * r);
+							if (islandMap[x + y * width] == largestIsland)
+							{
+								++good;
+							}
+							else
+							{
+								++bad;
+							}
 						}
-						else
-						{
-							++bad;
-						}
+						valid = (good / (good + bad)) > 0.75;
 					}
-					if (good * 0.2 > bad)
+					if (valid)
 					{
 						path.push(nearest);
 						current = nearest;
@@ -542,14 +547,54 @@ function generatePirateMap(canvas, seed)
     
     gfx.putImageData(image, 0, 0);
 	
+	// Draw the path
+	gfx.setLineDash([3, 5]);
+	gfx.strokeStyle = 'rgba(30, 30, 30, 0.75)';
+	gfx.lineWidth = 2.0;
+	for (var n = 0; n < path.length - 1; ++n)
+	{
+		var x1 = path[n].x;
+		var y1 = path[n].y;
+		var x2 = path[n + 1].x;
+		var y2 = path[n + 1].y;
+		var length = distance(x1, y1, x2, y2);
+		var factor1 = 0.2;
+		var factor2 = 0.3;
+		var angle = Math.atan2(y2 - y1, x2 - x1) + Math.PI / 2;
+		if (random.next() > 0.5)
+		{
+			angle += Math.PI;
+		}
+		var radius = length * (factor1 + factor2 * random.next());
+		var mx = (x1 + x2) * 0.5 + Math.cos(angle) * radius;
+		var my = (y1 + y2) * 0.5 + Math.sin(angle) * radius;
+		gfx.beginPath();
+		gfx.moveTo(x1, y1);
+		gfx.quadraticCurveTo(mx, my, x2, y2);
+		gfx.stroke();
+		
+		if (DEBUG)
+		{
+			gfx.beginPath();
+			gfx.rect(x1 - 1, y1 - 1, 3, 3);
+			gfx.fillStyle = 'red';
+			gfx.fill();
+			
+			gfx.beginPath();
+			gfx.rect(mx - 1, my - 1, 3, 3);
+			gfx.fillStyle = 'cyan';
+			gfx.fill();
+		}
+	}
+	
 	// Draw the goal
 	for (var n = 4; n >= 1; n--)
 	{
 		gfx.beginPath();
 		gfx.setLineDash([]);
-		gfx.strokeStyle = 'rgba(220, 30, 40, ' + (0.6 - 0.1 * n) + ')';
+		gfx.strokeStyle = 'rgba(220, 30, 40, ' + (0.5 - 0.1 * n) + ')';
 		gfx.lineWidth = n*1.7;
-		var radius = 8.0;
+		var radius = 9.0;
 		var spread = 0*1.8;
 		var x1 = goal.x - radius + (random.next() * 2 - 1) * spread;
 		var y1 = goal.y - radius + (random.next() * 2 - 1) * spread;
@@ -565,25 +610,6 @@ function generatePirateMap(canvas, seed)
 		gfx.lineTo(x4, y4);
 		gfx.stroke();
 	}
-	
-	gfx.setLineDash([3, 3]);
-	gfx.beginPath();
-	gfx.strokeStyle = 'rgba(30, 30, 30, 0.75)';
-	gfx.lineWidth = 1.5;
-	for (var n = 0; n < path.length - 1; ++n)
-	{
-		var x1 = path[n].x;
-		var y1 = path[n].y;
-		var x2 = path[n + 1].x;
-		var y2 = path[n + 1].y;
-		var length = distance(x1, y1, x2, y2);
-		var factor = 0.3;
-		var mx = (x1 + x2) * 0.5 + random.nextInt(-length * factor, +length * factor);
-		var my = (y1 + y2) * 0.5 + random.nextInt(-length * factor, +length * factor);
-		gfx.moveTo(x1, y1);
-		gfx.quadraticCurveTo(mx, my, x2, y2);
-	}
-	gfx.stroke();
 	
 	// Draw the largest island outline
 	if (DEBUG)

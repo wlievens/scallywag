@@ -3,10 +3,11 @@ function generatePirateMap(canvas, seed)
 	var DEBUG = false;
 
     var seaLevel          = -0.30;
-	var forestLevel       = +0.06;
-	var mountainLevel     = +0.15;
+	var mountainLevel     = +0.22;
     var margin            = 12;
     var borderSegmentSize = 30;
+    var coastRange        = 12;
+    var mountainRange     = 6;
 	
 	function logMatrix(data, w, h) {
 		var offset = 0;
@@ -219,11 +220,6 @@ function generatePirateMap(canvas, seed)
         return height >= seaLevel;
     }
     
-    function isForest(height)
-    {
-        return height >= forestLevel && height < mountainLevel;
-    }
-    
     function isMountain(height)
     {
         return height >= mountainLevel;
@@ -251,9 +247,9 @@ function generatePirateMap(canvas, seed)
             scale = 4.0;
             sx = scale * x / maxSize;
             sy = scale * y / maxSize;
-            var octaves = 4;
+            var octaves = 5;
             var value = 0;
-            persistence = 0.68;
+            persistence = 0.65;
             for (var n = 0; n < octaves; ++n)
             {
                 var frequency = Math.pow(2, n);
@@ -366,11 +362,9 @@ function generatePirateMap(canvas, seed)
 	}
     
 	// Determine coast distances
-    var coastRange = 10;
     var coastMap = buildRangeMap(heightMap, isLand, coastRange);
     
 	// Determine mountain distances
-    var mountainRange = 5;
     var mountainMap = buildRangeMap(heightMap, isMountain, mountainRange);
 	
 	// Determine the goal
@@ -419,7 +413,7 @@ function generatePirateMap(canvas, seed)
 	{
 		// Pick the points that will make up the path
 		points.push(goal);
-		for (var n = 0; n < 40; ++n)
+		for (var n = 0; n < 50; ++n)
 		{
 			var point = pickIslandPoint(largestIsland, points, 30.0);
 			if (point)
@@ -463,7 +457,8 @@ function generatePirateMap(canvas, seed)
 							var r = n / steps;
 							var x = Math.round(current.x + (nearest.x - current.x) * r);
 							var y = Math.round(current.y + (nearest.y - current.y) * r);
-							if (islandMap[x + y * width] == largestIsland)
+							var index = x + y * width;
+							if (islandMap[index] == largestIsland && !isMountain(heightMap[index]))
 							{
 								++good;
 							}
@@ -472,7 +467,7 @@ function generatePirateMap(canvas, seed)
 								++bad;
 							}
 						}
-						valid = (good / (good + bad)) > 0.75;
+						valid = (good / (good + bad)) > 0.80;
 					}
 					if (valid)
 					{
@@ -487,7 +482,6 @@ function generatePirateMap(canvas, seed)
 	
     
     var rgbLand        = [ 200, 190, 120 ];
-    var rgbForest      = [ 151, 166, 124 ];
     var rgbMountain    = [ 170, 160, 125 ];
     var rgbSea         = [ 190, 200, 180 ];
     var rgbBorder      = [  60,  60,  60 ];
@@ -507,7 +501,6 @@ function generatePirateMap(canvas, seed)
                 mountainRatio = mountainMap[index] / mountainRange;
 				ratio = Math.min(coastRatio, mountainRatio);
                 land = isLand(mapHeight);
-				forest = isForest(mapHeight);
 				mountain = isMountain(mapHeight);
                 rgb = mountain ? rgbMountain : land ? rgbLand : rgbSea;
                 if (land)
@@ -556,8 +549,6 @@ function generatePirateMap(canvas, seed)
                     }
                 }
             }
-            var grain = 0.95 + 0.05 * random.next();
-            factor *= grain;
             data[index * 4 + 0] = rgb[0] * factor;
             data[index * 4 + 1] = rgb[1] * factor;
             data[index * 4 + 2] = rgb[2] * factor;
@@ -586,8 +577,8 @@ function generatePirateMap(canvas, seed)
 		var x2 = path[n + 1].x;
 		var y2 = path[n + 1].y;
 		var length = distance(x1, y1, x2, y2);
-		var factor1 = 0.2;
-		var factor2 = 0.3;
+		var factor1 = 0.1;
+		var factor2 = 0.2;
 		var angle = Math.atan2(y2 - y1, x2 - x1) + Math.PI / 2;
 		if (random.next() > 0.5)
 		{
@@ -665,7 +656,7 @@ function generatePirateMap(canvas, seed)
         var p5 = q4;
         var q5 = p4;
         
-        color1 = 'rgb(77,62,48)';
+        color1 = 'rgb(80,65,60)';
         color2 = 'rgb(' + rgbSea[0] + ',' + rgbSea[1] + ',' + rgbSea[2] + ')';
 
 		gfx.setLineDash([]);
@@ -756,12 +747,38 @@ function generatePirateMap(canvas, seed)
         gfx.lineTo(  0,   0);
         gfx.fill();
         gfx.stroke();
+		
+		gfx.font = '22px Georgia';
+		gfx.fillText('N', -gfx.measureText('N').width / 2, -r1 - 2);
+
+		gfx.font = '14px Georgia';
+		gfx.fillText('S', -gfx.measureText('S').width / 2, +r1 + 12);
+		gfx.fillText('W', -r1 - gfx.measureText('W').width, +6);
+		gfx.fillText('E', +r1 + 1, +6);
     }
     
-    var compassPosition = margin + minSize * 0.12;
+    var compassPosition = margin + 80;
 	gfx.save();
     gfx.translate(compassPosition, height - compassPosition);
-    gfx.rotate(Math.PI * 0.04);
-    drawCompassRose(gfx, minSize * 0.1);
+    gfx.rotate(Math.PI * 0.04*0);
+    drawCompassRose(gfx, 60);
 	gfx.restore();
+	
+    noise.seed(random.nextInt(0, 0xFFFF));
+	var bitmap = gfx.getImageData(0, 0, width, height);
+	var data = bitmap.data;
+    for (var y = 0; y < height; ++y)
+    {
+        for (var x = 0; x < width; ++x)
+        {
+			var noiseAmplitude = 0.05;
+			var noiseScale = 0.02;
+			var grainAmplitude = 0.02;
+			var factor = 1.0 + noiseAmplitude * noise.perlin2(x * noiseScale, y * noiseScale) + random.next() * grainAmplitude * 2 - grainAmplitude;
+			data[(x + y * width) * 4 + 0] *= factor;
+			data[(x + y * width) * 4 + 1] *= factor;
+			data[(x + y * width) * 4 + 2] *= factor;
+		}
+	}
+	gfx.putImageData(bitmap, 0, 0);
 }

@@ -3,6 +3,8 @@ function generatePirateMap(canvas, seed)
 	var DEBUG = false;
 
     var seaLevel          = -0.30;
+	var forestLevel       = +0.06;
+	var mountainLevel     = +0.15;
     var margin            = 12;
     var borderSegmentSize = 30;
 	
@@ -214,7 +216,17 @@ function generatePirateMap(canvas, seed)
     
     function isLand(height)
     {
-        return height > seaLevel;
+        return height >= seaLevel;
+    }
+    
+    function isForest(height)
+    {
+        return height >= forestLevel && height < mountainLevel;
+    }
+    
+    function isMountain(height)
+    {
+        return height >= mountainLevel;
     }
     
     var gfx = canvas.getContext('2d');
@@ -316,40 +328,50 @@ function generatePirateMap(canvas, seed)
 	}
 	largestIslandBounds.width = largestIslandBounds.x2 - largestIslandBounds.x1 + 1;
 	largestIslandBounds.height = largestIslandBounds.y2 - largestIslandBounds.y1 + 1;
+	
+	function buildRangeMap(heightMap, discriminator, maxRange)
+	{
+		var map = [];
+		for (var y = 0; y < height; ++y)
+		{
+			for (var x = 0; x < width; ++x)
+			{
+				var index = x + y * width;
+				value = discriminator(heightMap[index]);
+				var nx1 = Math.max(0, x - maxRange);
+				var ny1 = Math.max(0, y - maxRange);
+				var nx2 = Math.min(width - 1, x + maxRange);
+				var ny2 = Math.min(height - 1, y + maxRange);
+				var minDist = maxRange;
+				for (var ny = ny1; ny <= ny2; ++ny)
+				{
+					for (var nx = nx1; nx <= nx2; ++nx)
+					{
+						nindex = nx + ny * width;
+						var nvalue = discriminator(heightMap[nindex]);
+						if (nvalue != value)
+						{
+							dist = distance(nx, ny, x, y);
+							if (dist < minDist)
+							{
+								minDist = dist;
+							}
+						}
+					}
+				}
+				map[index] = minDist;
+			}
+		}
+		return map;
+	}
     
-	// Determine coast range distances
-    var coastMap = [];
-    var coastRange = 9;
-    for (var y = 0; y < height; ++y)
-    {
-        for (var x = 0; x < width; ++x)
-        {
-            var index = x + y * width;
-            land = isLand(heightMap[index]);
-            var nx1 = Math.max(0, x - coastRange);
-            var ny1 = Math.max(0, y - coastRange);
-            var nx2 = Math.min(width - 1, x + coastRange);
-            var ny2 = Math.min(height - 1, y + coastRange);
-            var minDist = coastRange;
-            for (var ny = ny1; ny <= ny2; ++ny)
-            {
-                for (var nx = nx1; nx <= nx2; ++nx)
-                {
-                    nindex = nx + ny * width;
-                    var nland = isLand(heightMap[nindex]);
-                    if (nland != land)
-                    {
-                        dist = distance(nx, ny, x, y);
-                        if (dist < minDist)
-                        {
-                            minDist = dist;
-                        }
-                    }
-                }
-            }
-            coastMap[index] = minDist;
-        }
-    }
+	// Determine coast distances
+    var coastRange = 10;
+    var coastMap = buildRangeMap(heightMap, isLand, coastRange);
+    
+	// Determine mountain distances
+    var mountainRange = 5;
+    var mountainMap = buildRangeMap(heightMap, isMountain, mountainRange);
 	
 	// Determine the goal
 	function pickIslandPoint(island, others, minDistance)
@@ -465,6 +487,8 @@ function generatePirateMap(canvas, seed)
 	
     
     var rgbLand        = [ 200, 190, 120 ];
+    var rgbForest      = [ 151, 166, 124 ];
+    var rgbMountain    = [ 170, 160, 125 ];
     var rgbSea         = [ 190, 200, 180 ];
     var rgbBorder      = [  60,  60,  60 ];
     var rgbBorderFill1 = [ 240, 240, 240 ];
@@ -480,25 +504,29 @@ function generatePirateMap(canvas, seed)
             {
                 mapHeight = heightMap[index];
                 coastRatio = coastMap[index] / coastRange;
+                mountainRatio = mountainMap[index] / mountainRange;
+				ratio = Math.min(coastRatio, mountainRatio);
                 land = isLand(mapHeight);
-                rgb = land ? rgbLand : rgbSea;
+				forest = isForest(mapHeight);
+				mountain = isMountain(mapHeight);
+                rgb = mountain ? rgbMountain : land ? rgbLand : rgbSea;
                 if (land)
                 {
-                    factor = 0.75 + 0.2 * Math.pow(coastRatio, 2.0);
+                    factor = 0.75 + 0.2 * Math.pow(ratio, 2.0);
                 }
                 else
                 {
-                    if (coastRatio == 1)
+                    if (ratio == 1)
                     {
                         factor = 1;
                     }
-                    else if (coastRatio >= 0.5)
+                    else if (ratio >= 0.5)
                     {
-                        factor = 0.5 + 0.5 * coastRatio;
+                        factor = 0.5 + 0.5 * ratio;
                     }
                     else
                     {
-                        factor = 1 - coastRatio * 0.5;
+                        factor = 1 - ratio * 0.5;
                     }
                 }
             }

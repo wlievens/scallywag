@@ -4,4 +4,4 @@
 
 https://www.reddit.com/r/proceduralgeneration/comments/3vcbb3/monthly_challenge_1_dec_2015_procedural_pirate_map/
 
-*Demo:* https://rawgit.com/wlievens/scallywag/master/index.html
+**Demo:** https://rawgit.com/wlievens/scallywag/master/index.html
